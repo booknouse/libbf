@@ -45,6 +45,10 @@ public:
 
   /// Removes all items from the Bloom filter.
   virtual void clear() = 0;
+
+  virtual unsigned char* serialize(unsigned char* buf) = 0;
+  virtual unsigned int serialSize() = 0;
+  virtual int fromBuf(unsigned char*buf, unsigned int len) = 0;
 };
 
 } // namespace bf

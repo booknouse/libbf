@@ -1,8 +1,9 @@
 #include <bf/hash.hpp>
-
 #include <stdexcept>
-
+#include <memory>
+#include <string.h>
 #include <cassert>
+#include <iostream>
 
 namespace bf {
 
@@ -17,42 +18,155 @@ size_t default_hash_function::operator()(object const& o) const {
   return o.size() == 0 ? 0 : h3_(o.data(), o.size());
 }
 
-default_hasher::default_hasher(std::vector<hash_function> fns)
+unsigned char* default_hash_function::serialize(unsigned char* buf){
+  return h3_.serialize(buf);
+}
+
+int default_hash_function::fromBuf(unsigned char*buf, unsigned int len){
+  return h3_.fromBuf(buf,len);
+}
+
+default_hasher::default_hasher(std::vector<std::shared_ptr<default_hash_function>>& fns)
     : fns_(std::move(fns)) {
 }
 
 std::vector<digest> default_hasher::operator()(object const& o) const {
   std::vector<digest> d(fns_.size());
   for (size_t i = 0; i < fns_.size(); ++i)
-    d[i] = fns_[i](o);
+    d[i] = (*fns_[i])(o);
   return d;
 }
 
-double_hasher::double_hasher(size_t k, hash_function h1, hash_function h2)
+unsigned char* default_hasher::serialize(unsigned char* buf) {
+  unsigned int total_sz = sizeof(unsigned char)+sizeof(unsigned int);
+  for(auto& fn : fns_)
+    total_sz+=fn->serialSize();
+  unsigned int sz = sizeof(total_sz);
+  memmove(buf, &total_sz, sz);
+  buf += sz;
+  unsigned char type = 0;
+  sz = sizeof(type);
+  memmove(buf, &type, sz);
+  buf += sz;
+  unsigned int ct = fns_.size();
+  sz = sizeof(ct);
+  memmove(buf, &ct, sz);
+  buf += sz;
+  for(auto& fn : fns_) {
+    buf = fn->serialize(buf);
+  }
+  return buf;
+}
+
+unsigned int default_hasher::serialSize(){
+  unsigned int sz = sizeof(unsigned int)+sizeof(unsigned char)+sizeof(unsigned int);
+  for(auto& fn : fns_) {
+    sz += fn->serialSize();
+  }
+  return sz;
+}
+
+int default_hasher::fromBuf(unsigned char* buf, unsigned int len) {
+  auto buf_start = buf;
+  if(*buf !=0)
+    return 1;
+  buf+=sizeof(unsigned char);
+  unsigned int* ct = reinterpret_cast<unsigned int*>(buf);
+  buf+=sizeof(unsigned int);
+  for(unsigned int i=0;i<*ct;i++){
+    unsigned int* h3_sz = reinterpret_cast<unsigned int*>(buf);
+    buf+=sizeof(unsigned int);
+    auto fn = std::make_shared<default_hash_function>();
+    if(fn->fromBuf(buf, *h3_sz)!=0)
+      return 2;
+    fns_.push_back(std::move(fn));
+    buf += *h3_sz;
+  }
+  if(buf - buf_start != len)
+    return 3;
+  return 0;
+}
+
+double_hasher::double_hasher(size_t k, std::shared_ptr<default_hash_function>& h1, std::shared_ptr<default_hash_function>& h2)
     : k_(k), h1_(std::move(h1)), h2_(std::move(h2)) {
 }
 
 std::vector<digest> double_hasher::operator()(object const& o) const {
-  auto d1 = h1_(o);
-  auto d2 = h2_(o);
+  auto d1 = (*h1_)(o);
+  auto d2 = (*h2_)(o);
   std::vector<digest> d(k_);
   for (size_t i = 0; i < d.size(); ++i)
     d[i] = d1 + i * d2;
   return d;
 }
 
-hasher make_hasher(size_t k, size_t seed, bool double_hashing) {
+unsigned char* double_hasher::serialize(unsigned char* buf) {
+  unsigned int total_sz = sizeof(unsigned char)+sizeof(k_);
+  total_sz+=h1_->serialSize();
+  total_sz+=h2_->serialSize();
+  unsigned int sz = sizeof(total_sz);
+  memmove(buf, &total_sz, sz);
+  buf += sz;
+  unsigned char type = 1;
+  sz = sizeof(type);
+  memmove(buf, &type, sz);
+  buf += sz;
+  sz = sizeof(k_);
+  memmove(buf, &k_, sz);
+  buf += sz;
+  buf = h1_->serialize(buf);
+  buf = h2_->serialize(buf);
+  return buf;
+}
+
+unsigned int double_hasher::serialSize(){
+  unsigned int total_sz = sizeof(unsigned int)+sizeof(unsigned char)+sizeof(k_);
+  total_sz+=h1_->serialSize();
+  total_sz+=h2_->serialSize();
+  return total_sz;
+}
+
+int double_hasher::fromBuf(unsigned char* buf, unsigned int len){
+  auto buf_start = buf;
+  if(*buf !=1)
+    return 1;
+  buf+=sizeof(unsigned char);
+  k_ = *reinterpret_cast<size_t*>(buf);
+  buf+=sizeof(size_t);
+  {
+    unsigned int* h3_sz = reinterpret_cast<unsigned int*>(buf);
+    buf += sizeof(unsigned int);
+    h1_ = std::make_shared<default_hash_function>();
+    if (h1_->fromBuf(buf, *h3_sz) != 0)
+      return 2;
+    buf += *h3_sz;
+  }
+  {
+    unsigned int* h3_sz = reinterpret_cast<unsigned int*>(buf);
+    buf += sizeof(unsigned int);
+    h2_ = std::make_shared<default_hash_function>();
+    if (h2_->fromBuf(buf, *h3_sz) != 0)
+      return 3;
+    buf += *h3_sz;
+  }
+  if(buf - buf_start != len)
+    return 4;
+  return 0;
+}
+
+std::shared_ptr<base_hasher> make_hasher(size_t k, size_t seed, bool double_hashing) {
   assert(k > 0);
   std::minstd_rand0 prng(seed);
   if (double_hashing) {
-    auto h1 = default_hash_function(prng());
-    auto h2 = default_hash_function(prng());
-    return double_hasher(k, std::move(h1), std::move(h2));
+    auto h1 = std::make_shared<default_hash_function>(prng());
+    auto h2 = std::make_shared<default_hash_function>(prng());
+    return std::make_shared<double_hasher>(k, h1, h2);
   } else {
-    std::vector<hash_function> fns(k);
-    for (size_t i = 0; i < k; ++i)
-      fns[i] = default_hash_function(prng());
-    return default_hasher(std::move(fns));
+    std::vector<std::shared_ptr<default_hash_function>> fns(k);
+    for (size_t i = 0; i < k; ++i) {
+      fns[i] = std::make_shared<default_hash_function>(prng());
+    }
+    return std::make_shared<default_hasher>(fns);
   }
 }
 

@@ -41,5 +41,13 @@ void a2_bloom_filter::clear() {
   first_.clear();
   second_.clear();
 }
-
+unsigned char* a2_bloom_filter::serialize(unsigned char* buf){
+  return buf;
+}
+unsigned int a2_bloom_filter::serialSize(){
+  return 0;
+}
+int a2_bloom_filter::fromBuf(unsigned char*buf, unsigned int len){
+  return 0;
+}
 } // namespace bf

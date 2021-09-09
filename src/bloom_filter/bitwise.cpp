@@ -51,4 +51,13 @@ void bitwise_bloom_filter::grow() {
   levels_.emplace_back(make_hasher(k_, seed), cells);
 }
 
+unsigned char* bitwise_bloom_filter::serialize(unsigned char* buf){
+  return buf;
+}
+unsigned int bitwise_bloom_filter::serialSize(){
+  return 0;
+}
+int bitwise_bloom_filter::fromBuf(unsigned char*buf, unsigned int len){
+  return 0;
+}
 } // namespace bf

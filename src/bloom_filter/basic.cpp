@@ -1,5 +1,5 @@
 #include <bf/bloom_filter/basic.hpp>
-
+#include <memory>
 #include <cassert>
 #include <cmath>
 
@@ -15,7 +15,7 @@ size_t basic_bloom_filter::k(size_t cells, size_t capacity) {
   return std::ceil(frac * std::log(2));
 }
 
-basic_bloom_filter::basic_bloom_filter(hasher h, size_t cells, bool partition)
+basic_bloom_filter::basic_bloom_filter(std::shared_ptr<base_hasher> h, size_t cells, bool partition)
     : hasher_(std::move(h)), bits_(cells), partition_(partition) {
 }
 
@@ -30,7 +30,7 @@ basic_bloom_filter::basic_bloom_filter(double fp, size_t capacity, size_t seed,
   hasher_ = make_hasher(optimal_k, seed, double_hashing);
 }
 
-basic_bloom_filter::basic_bloom_filter(hasher h, bitvector b)
+basic_bloom_filter::basic_bloom_filter(std::shared_ptr<base_hasher> h, bitvector b)
     : hasher_(std::move(h)), bits_(std::move(b)) {
 }
 
@@ -39,7 +39,7 @@ basic_bloom_filter::basic_bloom_filter(basic_bloom_filter&& other)
 }
 
 void basic_bloom_filter::add(object const& o) {
-  auto digests = hasher_(o);
+  auto digests = (*hasher_)(o);
   if (partition_) {
     assert(bits_.size() % digests.size() == 0);
     auto parts = bits_.size() / digests.size();
@@ -52,7 +52,7 @@ void basic_bloom_filter::add(object const& o) {
 }
 
 size_t basic_bloom_filter::lookup(object const& o) const {
-  auto digests = hasher_(o);
+  auto digests = (*hasher_)(o);
   if (partition_) {
     assert(bits_.size() % digests.size() == 0);
     auto parts = bits_.size() / digests.size();
@@ -73,7 +73,7 @@ void basic_bloom_filter::clear() {
 }
 
 void basic_bloom_filter::remove(object const& o) {
-  for (auto d : hasher_(o))
+  for (auto d : (*hasher_)(o))
     bits_.reset(d % bits_.size());
 }
 
@@ -86,8 +86,43 @@ void basic_bloom_filter::swap(basic_bloom_filter& other) {
 bitvector const& basic_bloom_filter::storage() const {
   return bits_;
 }
-hasher const& basic_bloom_filter::hasher_function() const {
+std::shared_ptr<base_hasher> const& basic_bloom_filter::hasher_function() const {
   return hasher_;
 }
 
+unsigned char* basic_bloom_filter::serialize(unsigned char* buf) {
+  auto buf_start = buf;
+  unsigned int total_sz = hasher_->serialSize()+bits_.serialSize()+sizeof(partition_);
+  memmove(buf, &total_sz, sizeof(total_sz));
+  buf += sizeof(total_sz);
+  buf = hasher_->serialize(buf);
+  buf = bits_.serialize(buf);
+  memmove(buf, &partition_, sizeof(partition_));
+  return buf+sizeof(partition_);
+}
+unsigned int basic_bloom_filter::serialSize() {
+  return sizeof(unsigned int)+hasher_->serialSize()+bits_.serialSize()+sizeof(partition_);
+}
+int basic_bloom_filter::fromBuf(unsigned char*buf, unsigned int len) {
+  auto buf_start = buf;
+  unsigned int * hasher_sz = reinterpret_cast<unsigned int *>(buf);
+  buf += sizeof(unsigned int);
+  if(*buf==0)
+    hasher_ = std::make_shared<default_hasher>();
+  else
+    hasher_ = std::make_shared<double_hasher>();
+  if(hasher_->fromBuf(buf, *hasher_sz)!=0)
+    return 1;
+  buf += *hasher_sz;
+  unsigned int * cells_sz = reinterpret_cast<unsigned int *>(buf);
+  buf += sizeof(unsigned int);
+  if(bits_.fromBuf(buf, *cells_sz)!=0)
+    return 2;
+  buf += *cells_sz;
+  memmove(&partition_, buf, sizeof(partition_));
+  buf +=sizeof(partition_);
+  if(buf-buf_start!=len)
+    return 3;
+  return 0;
+}
 } // namespace bf

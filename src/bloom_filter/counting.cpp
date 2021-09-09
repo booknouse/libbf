@@ -2,10 +2,11 @@
 
 #include <algorithm>
 #include <cassert>
+#include <string.h>
 
 namespace bf {
 
-counting_bloom_filter::counting_bloom_filter(hasher h, size_t cells,
+counting_bloom_filter::counting_bloom_filter(std::shared_ptr<base_hasher> h, size_t cells,
                                              size_t width, bool partition)
     : hasher_(std::move(h)), cells_(cells, width), partition_(partition) {
 }
@@ -33,7 +34,7 @@ void counting_bloom_filter::remove(object const& o) {
 }
 
 std::vector<size_t> counting_bloom_filter::find_indices(object const& o) const {
-  auto digests = hasher_(o);
+  auto digests = (*hasher_)(o);
   std::vector<size_t> indices(digests.size());
   if (partition_) {
     assert(cells_.size() % digests.size() == 0);
@@ -99,7 +100,41 @@ size_t counting_bloom_filter::count(size_t index) const {
   return cells_.count(index);
 }
 
-spectral_mi_bloom_filter::spectral_mi_bloom_filter(hasher h, size_t cells,
+unsigned char* counting_bloom_filter::serialize(unsigned char* buf) {
+  unsigned int total_sz = hasher_->serialSize()+cells_.serialSize()+sizeof(partition_);
+  memmove(buf, &total_sz, sizeof(total_sz));
+  buf += sizeof(total_sz);
+  buf = hasher_->serialize(buf);
+  buf = cells_.serialize(buf);
+  memmove(buf, &partition_, sizeof(partition_));
+  return buf+sizeof(partition_);
+}
+
+unsigned int counting_bloom_filter::serialSize() {
+  return sizeof(unsigned int)+hasher_->serialSize()+cells_.serialSize()+sizeof(partition_);
+}
+
+int counting_bloom_filter::fromBuf(unsigned char*buf, unsigned int len) {
+  auto buf_start = buf;
+  unsigned int * hasher_sz = reinterpret_cast<unsigned int *>(buf);
+  buf += sizeof(unsigned int);
+  hasher_ = std::make_shared<default_hasher>();
+  if(hasher_->fromBuf(buf, *hasher_sz)!=0)
+    return 1;
+  buf += *hasher_sz;
+  unsigned int * cells_sz = reinterpret_cast<unsigned int *>(buf);
+  buf += sizeof(unsigned int);
+  if(cells_.fromBuf(buf, *cells_sz)!=0)
+    return 2;
+  buf += *cells_sz;
+  memmove(&partition_, buf, sizeof(partition_));
+  buf +=sizeof(partition_);
+  if(buf-buf_start!=len)
+    return 3;
+  return 0;
+}
+
+spectral_mi_bloom_filter::spectral_mi_bloom_filter(std::shared_ptr<base_hasher> h, size_t cells,
                                                    size_t width, bool partition)
     : counting_bloom_filter(std::move(h), cells, width, partition) {
 }
@@ -108,8 +143,8 @@ void spectral_mi_bloom_filter::add(object const& o) {
   increment(find_minima(find_indices(o)));
 }
 
-spectral_rm_bloom_filter::spectral_rm_bloom_filter(hasher h1, size_t cells1,
-                                                   size_t width1, hasher h2,
+spectral_rm_bloom_filter::spectral_rm_bloom_filter(std::shared_ptr<base_hasher> h1, size_t cells1,
+                                                   size_t width1, std::shared_ptr<base_hasher> h2,
                                                    size_t cells2, size_t width2,
                                                    bool partition)
     : first_(std::move(h1), cells1, width1, partition),
@@ -169,6 +204,35 @@ void spectral_rm_bloom_filter::remove(object const& o) {
   auto indices2 = second_.find_indices(o);
   if (second_.find_minimum(indices2) > 0)
     second_.decrement(indices2);
+}
+
+unsigned char* spectral_rm_bloom_filter::serialize(unsigned char* buf) {
+  unsigned int total_sz = first_.serialSize()+second_.serialSize();
+  auto sz = sizeof(total_sz);
+  memmove(buf, &total_sz,sz);
+  buf +=sz;
+  buf = first_.serialize(buf);
+  buf = second_.serialize(buf);
+  return buf;
+}
+unsigned int spectral_rm_bloom_filter::serialSize() {
+  return sizeof(unsigned int)+first_.serialSize()+second_.serialSize();
+}
+int spectral_rm_bloom_filter::fromBuf(unsigned char*buf, unsigned int len) {
+  auto buf_start = buf;
+  unsigned int * first_sz = reinterpret_cast<unsigned int *>(buf);
+  buf += sizeof(unsigned int);
+  if(0!=first_.fromBuf(buf, *first_sz))
+    return 1;
+  buf += *first_sz;
+  unsigned int * second_sz = reinterpret_cast<unsigned int *>(buf);
+  buf += sizeof(unsigned int);
+  if(0!=second_.fromBuf(buf, *second_sz))
+    return 2;
+  buf += *second_sz;
+  if(buf - buf_start != len)
+    return 3;
+  return 0;
 }
 
 } // namespace bf

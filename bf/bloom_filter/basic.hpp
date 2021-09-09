@@ -36,11 +36,12 @@ public:
   /// @return The optimal number of hash functions for *cells* and *capacity*.
   static size_t k(size_t cells, size_t capacity);
 
+  basic_bloom_filter():hasher_(nullptr){}
   /// Constructs a basic Bloom filter.
   /// @param hasher The hasher to use.
   /// @param cells The number of cells in the bit vector.
   /// @param partition Whether to partition the bit vector per hash function.
-  basic_bloom_filter(hasher h, size_t cells, bool partition = false);
+  basic_bloom_filter(std::shared_ptr<base_hasher> h, size_t cells, bool partition = false);
 
   /// Constructs a basic Bloom filter by given a desired false-positive
   /// probability and an expected number of elements. The implementation
@@ -63,7 +64,7 @@ public:
   ///
   /// @param hasher The hasher to use.
   /// @param bitvector the underlying bitvector of the bf.
-  basic_bloom_filter(hasher h, bitvector b);
+  basic_bloom_filter(std::shared_ptr<base_hasher> h, bitvector b);
 
   basic_bloom_filter(basic_bloom_filter&&);
 
@@ -89,10 +90,13 @@ public:
   bitvector const& storage() const;
 
   /// Returns the hasher of the Bloom filter.
-  hasher const& hasher_function() const;
+  std::shared_ptr<base_hasher> const& hasher_function() const;
+  unsigned char* serialize(unsigned char* buf) override;
+  unsigned int serialSize() override;
+  int fromBuf(unsigned char*buf, unsigned int len) override;
 
 private:
-  hasher hasher_;
+  std::shared_ptr<base_hasher> hasher_;
   bitvector bits_;
   bool partition_;
 };

@@ -4,7 +4,7 @@
 
 namespace bf {
 
-stable_bloom_filter::stable_bloom_filter(hasher h, size_t cells, size_t width,
+stable_bloom_filter::stable_bloom_filter(std::shared_ptr<base_hasher> h, size_t cells, size_t width,
                                          size_t d)
     : counting_bloom_filter(std::move(h), cells, width),
       d_(d),

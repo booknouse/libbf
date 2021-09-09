@@ -16,7 +16,7 @@ public:
   /// @param width The number of bits per cell.
   /// @param d The number of cells to decrement before adding an element.
   /// @pre `cells <= d`
-  stable_bloom_filter(hasher h, size_t cells, size_t width, size_t d);
+  stable_bloom_filter(std::shared_ptr<base_hasher> h, size_t cells, size_t width, size_t d);
 
   /// Adds an item to the stable Bloom filter.
   /// This invovles first decrementing *k* positions uniformly at random and

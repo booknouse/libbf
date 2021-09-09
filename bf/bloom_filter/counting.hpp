@@ -17,17 +17,17 @@ class counting_bloom_filter : public bloom_filter
   friend spectral_rm_bloom_filter;
 
 public:
+  counting_bloom_filter():hasher_(nullptr),partition_(false){}
   /// Constructs a counting Bloom filter.
   /// @param h The hasher.
   /// @param cells The number of cells.
   /// @param width The number of bits per cell.
   /// @param partition Whether to partition the bit vector per hash function.
-  counting_bloom_filter(hasher h, size_t cells, size_t width,
+  counting_bloom_filter(std::shared_ptr<base_hasher> h, size_t cells, size_t width,
                         bool partition = false);
 
   /// Move-constructs a counting Bloom filter.
-  counting_bloom_filter(counting_bloom_filter&&) = default;
-
+  //counting_bloom_filter(counting_bloom_filter&&) = default;
   using bloom_filter::add;
   using bloom_filter::lookup;
 
@@ -44,6 +44,10 @@ public:
   {
     remove(wrap(x));
   }
+
+  virtual unsigned char* serialize(unsigned char* buf) override;
+  virtual unsigned int serialSize() override;
+  virtual int fromBuf(unsigned char*buf, unsigned int len) override;
 
 protected:
   /// Maps an object to the indices in the underlying counter vector.
@@ -76,7 +80,7 @@ protected:
   /// @pre `index < cells.size()`
   size_t count(size_t index) const;
 
-  hasher hasher_;
+  std::shared_ptr<base_hasher> hasher_;
   counter_vector cells_;
   bool partition_;
 };
@@ -90,7 +94,7 @@ public:
   /// @param cells The number of cells.
   /// @param width The number of bits per cell.
   /// @param partition Whether to partition the bit vector per hash function.
-  spectral_mi_bloom_filter(hasher h, size_t cells, size_t width,
+  spectral_mi_bloom_filter(std::shared_ptr<base_hasher> h, size_t cells, size_t width,
                            bool partition = false);
 
   using bloom_filter::add;
@@ -103,6 +107,7 @@ public:
 class spectral_rm_bloom_filter : public bloom_filter
 {
 public:
+  spectral_rm_bloom_filter()=default;
   /// Constructs a spectral RM Bloom filter.
   /// @param h1 The first hasher.
   /// @param cells1 The number of cells in the first Bloom filter.
@@ -111,8 +116,8 @@ public:
   /// @param cells2 The number of cells in the second Bloom filter.
   /// @param width2 The number of bits per cell in the second Bloom filter.
   /// @param partition Whether to partition the bit vector per hash function.
-  spectral_rm_bloom_filter(hasher h1, size_t cells1, size_t width1,
-                           hasher h2, size_t cells2, size_t width2,
+  spectral_rm_bloom_filter(std::shared_ptr<base_hasher> h1, size_t cells1, size_t width1,
+                           std::shared_ptr<base_hasher> h2, size_t cells2, size_t width2,
                            bool partition = false);
 
   using bloom_filter::add;
@@ -124,6 +129,9 @@ public:
   /// Removes an element.
   /// @param o The object whose cells to decrement by 1.
   void remove(object const& o);
+  unsigned char* serialize(unsigned char* buf) override;
+  unsigned int serialSize() override;
+  int fromBuf(unsigned char*buf, unsigned int len) override;
 
 private:
   counting_bloom_filter first_;

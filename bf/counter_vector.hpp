@@ -23,6 +23,7 @@ class counter_vector
                                   counter_vector const& y);
 
 public:
+  counter_vector()=default;
   /// Construct a counter vector of size @f$O(mw)@f$ where *m is the number of
   /// cells and *w the number of bits per cell.
   ///
@@ -31,7 +32,7 @@ public:
   /// @param width The number of bits per cell.
   ///
   /// @pre `cells > 0 && width > 0`
-  counter_vector(size_t cells, size_t width);
+  explicit counter_vector(size_t cells, size_t width);
 
   /// Merges this counter vector with another counter vector.
   /// @param other The other counter vector.
@@ -91,6 +92,10 @@ public:
   /// Retrieves the counter width.
   /// @return The number of bits per cell.
   size_t width() const;
+
+  unsigned char* serialize(unsigned char* buf) ;
+  unsigned int serialSize() ;
+  int fromBuf(unsigned char* buf, unsigned len);
 
 private:
   bitvector bits_;

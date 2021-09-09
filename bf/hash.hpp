@@ -1,9 +1,9 @@
 #ifndef BF_HASH_POLICY_HPP
 #define BF_HASH_POLICY_HPP
-
-#include <functional>
 #include <bf/h3.hpp>
 #include <bf/object.hpp>
+#include <functional>
+#include <memory>
 
 namespace bf {
 
@@ -20,40 +20,61 @@ class default_hash_function
 {
 public:
   constexpr static size_t max_obj_size = 36;
-
-  default_hash_function(size_t seed);
+  default_hash_function()=default;
+  explicit default_hash_function(size_t seed);
 
   size_t operator()(object const& o) const;
 
+  unsigned char* serialize(unsigned char* buf);
+  unsigned int serialSize(){return h3_.serialSize();}
+  int fromBuf(unsigned char*, unsigned int len);
 private:
   h3<size_t, max_obj_size> h3_;
 };
 
+class base_hasher{
+public:
+  base_hasher()=default;
+  virtual std::vector<digest> operator()(object const& o) const = 0;
+  virtual unsigned char* serialize(unsigned char* buf) = 0;
+  virtual unsigned int serialSize() = 0;
+  virtual int fromBuf(unsigned char*, unsigned int) = 0;
+};
+
 /// A hasher which hashes an object *k* times.
-class default_hasher
+class default_hasher : public base_hasher
 {
 public:
-  default_hasher(std::vector<hash_function> fns);
+  default_hasher()=default;
+  default_hasher(std::vector<std::shared_ptr<default_hash_function>>& fns);
 
-  std::vector<digest> operator()(object const& o) const;
+  std::vector<digest> operator()(object const& o) const override;
 
+  unsigned char* serialize(unsigned char* buf) override;
+  unsigned int serialSize() override;
+  int fromBuf(unsigned char*, unsigned int len) override;
 private:
-  std::vector<hash_function> fns_;
+  std::vector<std::shared_ptr<default_hash_function> > fns_;
 };
 
 /// A hasher which hashes an object two times and generates *k* digests through
 /// a linear combinations of the two digests.
-class double_hasher
+class double_hasher : public base_hasher
 {
 public:
-  double_hasher(size_t k, hash_function h1, hash_function h2);
+  double_hasher()=default;
+  double_hasher(size_t k, std::shared_ptr<default_hash_function>& h1, std::shared_ptr<default_hash_function>&  h2);
 
-  std::vector<digest> operator()(object const& o) const;
+  std::vector<digest> operator()(object const& o) const override;
+
+  unsigned char* serialize(unsigned char* buf) override;
+  unsigned int serialSize() override;
+  int fromBuf(unsigned char*, unsigned int len) override;
 
 private:
   size_t k_;
-  hash_function h1_;
-  hash_function h2_;
+  std::shared_ptr<default_hash_function>  h1_;
+  std::shared_ptr<default_hash_function>  h2_;
 };
 
 /// Creates a default or double hasher with the default hash function, using
@@ -69,8 +90,7 @@ private:
 /// @return A ::hasher with the *k* hash functions.
 ///
 /// @pre `k > 0`
-hasher make_hasher(size_t k, size_t seed = 0, bool double_hashing = false);
-
+std::shared_ptr<base_hasher> make_hasher(size_t k, size_t seed = 0, bool double_hashing = false);
 } // namespace bf
 
 #endif

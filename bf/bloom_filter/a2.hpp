@@ -44,6 +44,9 @@ public:
   virtual void add(object const& o) override;
   virtual size_t lookup(object const& o) const override;
   virtual void clear() override;
+  unsigned char* serialize(unsigned char* buf) override;
+  unsigned int serialSize() override;
+  int fromBuf(unsigned char*buf, unsigned int len) override;
 
 private:
   basic_bloom_filter first_;
