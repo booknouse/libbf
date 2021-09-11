@@ -104,30 +104,30 @@ size_t counter_vector::width() const {
 }
 
 unsigned char* counter_vector::serialize(unsigned char* buf) {
-  const unsigned int width_sz = sizeof(width_);
-  const unsigned int total_sz=bits_.serialSize()+width_sz;
-  memmove(buf, &total_sz, sizeof(total_sz));
-  buf += sizeof(total_sz);
+  auto bits_sz = bits_.serializedSize();
+  memmove(buf, &bits_sz, sizeof(bits_sz));
+  buf += sizeof(bits_sz);
   buf = bits_.serialize(buf);
+  const unsigned int width_sz = sizeof(width_);
   memmove(buf, &width_, width_sz);
-  return buf+width_sz;
+  return buf + width_sz;
 }
 
-unsigned int counter_vector::serialSize() {
-  return sizeof(unsigned int)+bits_.serialSize()+sizeof(width_);
+unsigned int counter_vector::serializedSize() const {
+  return sizeof(unsigned int) + bits_.serializedSize() + sizeof(width_);
 }
 
 int counter_vector::fromBuf(unsigned char* buf, unsigned int len) {
   auto buf_start = buf;
   unsigned int* bits_sz = reinterpret_cast<unsigned int*>(buf);
   buf += sizeof(unsigned int);
-  if(bits_.fromBuf(buf, *bits_sz) !=0)
+  if (bits_.fromBuf(buf, *bits_sz) != 0)
     return 1;
   buf += *bits_sz;
   const unsigned int width_sz = sizeof(width_);
-  memmove(&width_,buf,width_sz);
-  buf+=width_sz;
-  if(buf- buf_start!= len)
+  memmove(&width_, buf, width_sz);
+  buf += width_sz;
+  if (buf - buf_start != len)
     return 2;
   return 0;
 }

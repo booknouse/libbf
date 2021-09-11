@@ -46,7 +46,7 @@ public:
   }
 
   virtual unsigned char* serialize(unsigned char* buf) override;
-  virtual unsigned int serialSize() override;
+  virtual unsigned int serializedSize() const override;
   virtual int fromBuf(unsigned char*buf, unsigned int len) override;
 
 protected:
@@ -130,7 +130,7 @@ public:
   /// @param o The object whose cells to decrement by 1.
   void remove(object const& o);
   unsigned char* serialize(unsigned char* buf) override;
-  unsigned int serialSize() override;
+  unsigned int serializedSize() const override;
   int fromBuf(unsigned char*buf, unsigned int len) override;
 
 private:

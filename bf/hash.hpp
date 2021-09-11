@@ -26,8 +26,11 @@ public:
   size_t operator()(object const& o) const;
 
   unsigned char* serialize(unsigned char* buf);
-  unsigned int serialSize(){return h3_.serialSize();}
+  unsigned int serializedSize() const {
+    return h3_.serializedSize();
+  }
   int fromBuf(unsigned char*, unsigned int len);
+
 private:
   h3<size_t, max_obj_size> h3_;
 };
@@ -37,7 +40,7 @@ public:
   base_hasher()=default;
   virtual std::vector<digest> operator()(object const& o) const = 0;
   virtual unsigned char* serialize(unsigned char* buf) = 0;
-  virtual unsigned int serialSize() = 0;
+  virtual unsigned int serializedSize() const = 0;
   virtual int fromBuf(unsigned char*, unsigned int) = 0;
 };
 
@@ -51,7 +54,7 @@ public:
   std::vector<digest> operator()(object const& o) const override;
 
   unsigned char* serialize(unsigned char* buf) override;
-  unsigned int serialSize() override;
+  unsigned int serializedSize() const override;
   int fromBuf(unsigned char*, unsigned int len) override;
 private:
   std::vector<std::shared_ptr<default_hash_function> > fns_;
@@ -63,12 +66,13 @@ class double_hasher : public base_hasher
 {
 public:
   double_hasher()=default;
-  double_hasher(size_t k, std::shared_ptr<default_hash_function>& h1, std::shared_ptr<default_hash_function>&  h2);
+  double_hasher(size_t k, std::shared_ptr<default_hash_function>& h1,
+                std::shared_ptr<default_hash_function>& h2);
 
   std::vector<digest> operator()(object const& o) const override;
 
   unsigned char* serialize(unsigned char* buf) override;
-  unsigned int serialSize() override;
+  unsigned int serializedSize() const override;
   int fromBuf(unsigned char*, unsigned int len) override;
 
 private:

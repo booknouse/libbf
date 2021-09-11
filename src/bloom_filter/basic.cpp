@@ -91,37 +91,40 @@ std::shared_ptr<base_hasher> const& basic_bloom_filter::hasher_function() const 
 }
 
 unsigned char* basic_bloom_filter::serialize(unsigned char* buf) {
-  auto buf_start = buf;
-  unsigned int total_sz = hasher_->serialSize()+bits_.serialSize()+sizeof(partition_);
-  memmove(buf, &total_sz, sizeof(total_sz));
-  buf += sizeof(total_sz);
+  auto hasher_sz = hasher_->serializedSize();
+  memmove(buf, &hasher_sz, sizeof(hasher_sz));
+  buf += sizeof(hasher_sz);
   buf = hasher_->serialize(buf);
+  auto bits_sz = bits_.serializedSize();
+  memmove(buf, &bits_sz, sizeof(bits_sz));
+  buf += sizeof(bits_sz);
   buf = bits_.serialize(buf);
   memmove(buf, &partition_, sizeof(partition_));
-  return buf+sizeof(partition_);
+  return buf + sizeof(partition_);
 }
-unsigned int basic_bloom_filter::serialSize() {
-  return sizeof(unsigned int)+hasher_->serialSize()+bits_.serialSize()+sizeof(partition_);
+unsigned int basic_bloom_filter::serializedSize() const {
+  return sizeof(unsigned int) * 2 + hasher_->serializedSize()
+         + bits_.serializedSize() + sizeof(partition_);
 }
-int basic_bloom_filter::fromBuf(unsigned char*buf, unsigned int len) {
+int basic_bloom_filter::fromBuf(unsigned char* buf, unsigned int len) {
   auto buf_start = buf;
-  unsigned int * hasher_sz = reinterpret_cast<unsigned int *>(buf);
+  unsigned int* hasher_sz = reinterpret_cast<unsigned int*>(buf);
   buf += sizeof(unsigned int);
-  if(*buf==0)
+  if (*buf == 0)
     hasher_ = std::make_shared<default_hasher>();
   else
     hasher_ = std::make_shared<double_hasher>();
-  if(hasher_->fromBuf(buf, *hasher_sz)!=0)
+  if (hasher_->fromBuf(buf, *hasher_sz) != 0)
     return 1;
   buf += *hasher_sz;
-  unsigned int * cells_sz = reinterpret_cast<unsigned int *>(buf);
+  unsigned int* cells_sz = reinterpret_cast<unsigned int*>(buf);
   buf += sizeof(unsigned int);
-  if(bits_.fromBuf(buf, *cells_sz)!=0)
+  if (bits_.fromBuf(buf, *cells_sz) != 0)
     return 2;
   buf += *cells_sz;
   memmove(&partition_, buf, sizeof(partition_));
-  buf +=sizeof(partition_);
-  if(buf-buf_start!=len)
+  buf += sizeof(partition_);
+  if (buf - buf_start != len)
     return 3;
   return 0;
 }

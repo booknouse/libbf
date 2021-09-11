@@ -421,32 +421,30 @@ std::string to_string(bitvector const& b, bool msb_to_lsb, bool all,
 }
 
 unsigned char* bitvector::serialize(unsigned char* buf) {
-  unsigned int sz = bits_.size()*sizeof(block_type);
-  unsigned int total_sz = sizeof(sz)+sz+sizeof(num_bits_);
-  memmove(buf,&total_sz,sizeof(total_sz));
-  buf += sizeof(total_sz);
+  unsigned int sz = bits_.size() * sizeof(block_type);
   memmove(buf, &sz, sizeof(sz));
   buf += sizeof(sz);
   memmove(buf, bits_.data(), sz);
-  buf +=sz;
-  memmove(buf,&num_bits_, sizeof(num_bits_));
+  buf += sz;
+  memmove(buf, &num_bits_, sizeof(num_bits_));
   return buf + sizeof(num_bits_);
 }
 
-unsigned int bitvector::serialSize() {
-  unsigned int sz = bits_.size()*sizeof(block_type);
-  return sizeof(unsigned int)*2+sz+sizeof(num_bits_);
+unsigned int bitvector::serializedSize() const {
+  unsigned int sz = bits_.size() * sizeof(block_type);
+  return sizeof(unsigned int) + sz + sizeof(num_bits_);
 }
 
-int bitvector::fromBuf(unsigned char* buf, unsigned int len){
+int bitvector::fromBuf(unsigned char* buf, unsigned int len) {
   auto* start_buf = buf;
   unsigned int* sz = reinterpret_cast<unsigned int*>(buf);
-  buf +=sizeof(unsigned int);
-  bits_.assign(reinterpret_cast<block_type*>(buf),reinterpret_cast<block_type*>(buf+(*sz)));
+  buf += sizeof(unsigned int);
+  bits_.assign(reinterpret_cast<block_type*>(buf),
+               reinterpret_cast<block_type*>(buf + (*sz)));
   buf += *sz;
   memmove(&num_bits_, buf, sizeof(num_bits_));
   buf += sizeof(num_bits_);
-  if(buf-start_buf!=len)
+  if (buf - start_buf != len)
     return 1;
   return 0;
 }

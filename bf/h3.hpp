@@ -18,29 +18,25 @@ public:
   constexpr static size_t byte_range =
     std::numeric_limits<unsigned char>::max() + 1;
   h3()=default;
-  explicit h3(T seed ):bytes_(N*byte_range)
-  {
+  explicit h3(T seed ):bytes_(N*byte_range) {
     T bits[N * bits_per_byte];
     std::minstd_rand0 prng(seed);
-    for (size_t bit = 0; bit < N * bits_per_byte; ++bit)
-    {
+    for (size_t bit = 0; bit < N * bits_per_byte; ++bit) {
       bits[bit] = 0;
-      for (size_t i = 0; i < sizeof(T)/2; i++)
+      for (size_t i = 0; i < sizeof(T) / 2; i++)
         bits[bit] = (bits[bit] << 16) | (prng() & 0xFFFF);
     }
 
     for (size_t byte = 0; byte < N; ++byte)
-      for (size_t val = 0; val < byte_range; ++val)
-      {
-        auto byte_idx = byte*byte_range+val;
-        //bytes_[byte][val] = 0;
+      for (size_t val = 0; val < byte_range; ++val) {
+        auto byte_idx = byte * byte_range + val;
+        // bytes_[byte][val] = 0;
         bytes_[byte_idx] = 0;
         for (size_t bit = 0; bit < bits_per_byte; ++bit)
           if (val & (1 << bit))
             bytes_[byte_idx] ^= bits[byte * bits_per_byte + bit];
       }
   }
-  //h3(std::vector<T>&& other):bytes_(std::forward<std::vector<T>>(other)){}
 
   T operator()(void const* data, size_t size, size_t offset = 0) const
   {
@@ -66,29 +62,18 @@ public:
     return result;
   }
 
-  unsigned char* serialize(unsigned char* buf){
-    unsigned int sz = bytes_.size()*sizeof(T);
-    //unsigned int total_sz =  sz+sizeof(unsigned int);
-    //memmove(buf,&total_sz,sizeof(total_sz));
-    //buf+=sizeof(total_sz);
-    memmove(buf,&sz,sizeof(sz));
-    buf+=sizeof(sz);
-    memmove(buf, bytes_.data(),sz);
-    return buf+sz;
+  unsigned char* serialize(unsigned char* buf) {
+    unsigned int sz = bytes_.size() * sizeof(T);
+    memmove(buf, bytes_.data(), sz);
+    return buf + sz;
   }
 
-  unsigned int serialSize(){
-    return sizeof(unsigned int)+bytes_.size()*sizeof(T);
+  unsigned int serializedSize() const {
+    return bytes_.size() * sizeof(T);
   }
 
-  int fromBuf(unsigned char* buf, unsigned int len){
-
-
-
-    //unsigned int sz = *(reinterpret_cast<unsigned int*>(buf));
-    //if(sz+sizeof(sz)!=len)
-    //  return 1;
-    bytes_.assign(reinterpret_cast<T*>(buf), reinterpret_cast<T*>(buf+len));
+  int fromBuf(unsigned char* buf, unsigned int len) {
+    bytes_.assign(reinterpret_cast<T*>(buf), reinterpret_cast<T*>(buf + len));
     return 0;
   }
 

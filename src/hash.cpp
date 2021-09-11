@@ -38,51 +38,49 @@ std::vector<digest> default_hasher::operator()(object const& o) const {
 }
 
 unsigned char* default_hasher::serialize(unsigned char* buf) {
-  unsigned int total_sz = sizeof(unsigned char)+sizeof(unsigned int);
-  for(auto& fn : fns_)
-    total_sz+=fn->serialSize();
-  unsigned int sz = sizeof(total_sz);
-  memmove(buf, &total_sz, sz);
-  buf += sz;
   unsigned char type = 0;
-  sz = sizeof(type);
+  unsigned int sz = sizeof(type);
   memmove(buf, &type, sz);
   buf += sz;
   unsigned int ct = fns_.size();
   sz = sizeof(ct);
   memmove(buf, &ct, sz);
   buf += sz;
-  for(auto& fn : fns_) {
+  for (auto& fn : fns_) {
+    auto fn_sz = fn->serializedSize();
+    memmove(buf, &fn_sz, sizeof(fn_sz));
+    buf += sizeof(fn_sz);
     buf = fn->serialize(buf);
   }
   return buf;
 }
 
-unsigned int default_hasher::serialSize(){
-  unsigned int sz = sizeof(unsigned int)+sizeof(unsigned char)+sizeof(unsigned int);
-  for(auto& fn : fns_) {
-    sz += fn->serialSize();
+unsigned int default_hasher::serializedSize() const {
+  unsigned int sz = sizeof(unsigned char) + sizeof(unsigned int);
+  sz += fns_.size() * sizeof(unsigned int);
+  for (auto& fn : fns_) {
+    sz += fn->serializedSize();
   }
   return sz;
 }
 
 int default_hasher::fromBuf(unsigned char* buf, unsigned int len) {
   auto buf_start = buf;
-  if(*buf !=0)
+  if (*buf != 0)
     return 1;
-  buf+=sizeof(unsigned char);
+  buf += sizeof(unsigned char);
   unsigned int* ct = reinterpret_cast<unsigned int*>(buf);
-  buf+=sizeof(unsigned int);
-  for(unsigned int i=0;i<*ct;i++){
+  buf += sizeof(unsigned int);
+  for (unsigned int i = 0; i < *ct; i++) {
     unsigned int* h3_sz = reinterpret_cast<unsigned int*>(buf);
-    buf+=sizeof(unsigned int);
+    buf += sizeof(unsigned int);
     auto fn = std::make_shared<default_hash_function>();
-    if(fn->fromBuf(buf, *h3_sz)!=0)
+    if (fn->fromBuf(buf, *h3_sz) != 0)
       return 2;
     fns_.push_back(std::move(fn));
     buf += *h3_sz;
   }
-  if(buf - buf_start != len)
+  if (buf - buf_start != len)
     return 3;
   return 0;
 }
@@ -101,38 +99,39 @@ std::vector<digest> double_hasher::operator()(object const& o) const {
 }
 
 unsigned char* double_hasher::serialize(unsigned char* buf) {
-  unsigned int total_sz = sizeof(unsigned char)+sizeof(k_);
-  total_sz+=h1_->serialSize();
-  total_sz+=h2_->serialSize();
-  unsigned int sz = sizeof(total_sz);
-  memmove(buf, &total_sz, sz);
-  buf += sz;
   unsigned char type = 1;
-  sz = sizeof(type);
+  unsigned int sz = sizeof(type);
   memmove(buf, &type, sz);
   buf += sz;
   sz = sizeof(k_);
   memmove(buf, &k_, sz);
   buf += sz;
+  auto h1_sz = h1_->serializedSize();
+  memmove(buf, &h1_sz, sizeof(h1_sz));
+  buf += sizeof(h1_sz);
   buf = h1_->serialize(buf);
+  auto h2_sz = h2_->serializedSize();
+  memmove(buf, &h2_sz, sizeof(h2_sz));
+  buf += sizeof(h2_sz);
   buf = h2_->serialize(buf);
   return buf;
 }
 
-unsigned int double_hasher::serialSize(){
-  unsigned int total_sz = sizeof(unsigned int)+sizeof(unsigned char)+sizeof(k_);
-  total_sz+=h1_->serialSize();
-  total_sz+=h2_->serialSize();
+unsigned int double_hasher::serializedSize() const {
+  unsigned int total_sz =
+    sizeof(unsigned char) + sizeof(k_) + 2 * sizeof(unsigned int);
+  total_sz += h1_->serializedSize();
+  total_sz += h2_->serializedSize();
   return total_sz;
 }
 
-int double_hasher::fromBuf(unsigned char* buf, unsigned int len){
+int double_hasher::fromBuf(unsigned char* buf, unsigned int len) {
   auto buf_start = buf;
-  if(*buf !=1)
+  if (*buf != 1)
     return 1;
-  buf+=sizeof(unsigned char);
+  buf += sizeof(unsigned char);
   k_ = *reinterpret_cast<size_t*>(buf);
-  buf+=sizeof(size_t);
+  buf += sizeof(size_t);
   {
     unsigned int* h3_sz = reinterpret_cast<unsigned int*>(buf);
     buf += sizeof(unsigned int);
@@ -149,7 +148,7 @@ int double_hasher::fromBuf(unsigned char* buf, unsigned int len){
       return 3;
     buf += *h3_sz;
   }
-  if(buf - buf_start != len)
+  if (buf - buf_start != len)
     return 4;
   return 0;
 }

@@ -101,35 +101,39 @@ size_t counting_bloom_filter::count(size_t index) const {
 }
 
 unsigned char* counting_bloom_filter::serialize(unsigned char* buf) {
-  unsigned int total_sz = hasher_->serialSize()+cells_.serialSize()+sizeof(partition_);
-  memmove(buf, &total_sz, sizeof(total_sz));
-  buf += sizeof(total_sz);
+  unsigned int hasher_sz = hasher_->serializedSize();
+  memmove(buf, &hasher_sz, sizeof(hasher_sz));
+  buf += sizeof(hasher_sz);
   buf = hasher_->serialize(buf);
+  unsigned int cells_sz = cells_.serializedSize();
+  memmove(buf, &cells_sz, sizeof(cells_sz));
+  buf += sizeof(cells_sz);
   buf = cells_.serialize(buf);
   memmove(buf, &partition_, sizeof(partition_));
-  return buf+sizeof(partition_);
+  return buf + sizeof(partition_);
 }
 
-unsigned int counting_bloom_filter::serialSize() {
-  return sizeof(unsigned int)+hasher_->serialSize()+cells_.serialSize()+sizeof(partition_);
+unsigned int counting_bloom_filter::serializedSize() const {
+  return sizeof(unsigned int) * 2 + hasher_->serializedSize()
+         + cells_.serializedSize() + sizeof(partition_);
 }
 
-int counting_bloom_filter::fromBuf(unsigned char*buf, unsigned int len) {
+int counting_bloom_filter::fromBuf(unsigned char* buf, unsigned int len) {
   auto buf_start = buf;
-  unsigned int * hasher_sz = reinterpret_cast<unsigned int *>(buf);
+  unsigned int* hasher_sz = reinterpret_cast<unsigned int*>(buf);
   buf += sizeof(unsigned int);
   hasher_ = std::make_shared<default_hasher>();
-  if(hasher_->fromBuf(buf, *hasher_sz)!=0)
+  if (hasher_->fromBuf(buf, *hasher_sz) != 0)
     return 1;
   buf += *hasher_sz;
-  unsigned int * cells_sz = reinterpret_cast<unsigned int *>(buf);
+  unsigned int* cells_sz = reinterpret_cast<unsigned int*>(buf);
   buf += sizeof(unsigned int);
-  if(cells_.fromBuf(buf, *cells_sz)!=0)
+  if (cells_.fromBuf(buf, *cells_sz) != 0)
     return 2;
   buf += *cells_sz;
   memmove(&partition_, buf, sizeof(partition_));
-  buf +=sizeof(partition_);
-  if(buf-buf_start!=len)
+  buf += sizeof(partition_);
+  if (buf - buf_start != len)
     return 3;
   return 0;
 }
@@ -207,30 +211,33 @@ void spectral_rm_bloom_filter::remove(object const& o) {
 }
 
 unsigned char* spectral_rm_bloom_filter::serialize(unsigned char* buf) {
-  unsigned int total_sz = first_.serialSize()+second_.serialSize();
-  auto sz = sizeof(total_sz);
-  memmove(buf, &total_sz,sz);
-  buf +=sz;
+  auto first_sz = first_.serializedSize();
+  memmove(buf, &first_sz, sizeof(first_sz));
+  buf += sizeof(first_sz);
   buf = first_.serialize(buf);
+  auto second_sz = second_.serializedSize();
+  memmove(buf, &second_sz, sizeof(second_sz));
+  buf += sizeof(second_sz);
   buf = second_.serialize(buf);
   return buf;
 }
-unsigned int spectral_rm_bloom_filter::serialSize() {
-  return sizeof(unsigned int)+first_.serialSize()+second_.serialSize();
+unsigned int spectral_rm_bloom_filter::serializedSize() const {
+  return sizeof(unsigned int) * 2 + first_.serializedSize()
+         + second_.serializedSize();
 }
-int spectral_rm_bloom_filter::fromBuf(unsigned char*buf, unsigned int len) {
+int spectral_rm_bloom_filter::fromBuf(unsigned char* buf, unsigned int len) {
   auto buf_start = buf;
-  unsigned int * first_sz = reinterpret_cast<unsigned int *>(buf);
+  unsigned int* first_sz = reinterpret_cast<unsigned int*>(buf);
   buf += sizeof(unsigned int);
-  if(0!=first_.fromBuf(buf, *first_sz))
+  if (0 != first_.fromBuf(buf, *first_sz))
     return 1;
   buf += *first_sz;
-  unsigned int * second_sz = reinterpret_cast<unsigned int *>(buf);
+  unsigned int* second_sz = reinterpret_cast<unsigned int*>(buf);
   buf += sizeof(unsigned int);
-  if(0!=second_.fromBuf(buf, *second_sz))
+  if (0 != second_.fromBuf(buf, *second_sz))
     return 2;
   buf += *second_sz;
-  if(buf - buf_start != len)
+  if (buf - buf_start != len)
     return 3;
   return 0;
 }

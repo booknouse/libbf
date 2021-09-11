@@ -235,7 +235,7 @@ public:
   size_type find_next(size_type i) const;
 
   unsigned char* serialize(unsigned char* buf) ;
-  unsigned int serialSize() ;
+  unsigned int serializedSize() const;
   int fromBuf(unsigned char* buf, unsigned int len);
 
 private:

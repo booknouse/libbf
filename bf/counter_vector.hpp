@@ -94,7 +94,7 @@ public:
   size_t width() const;
 
   unsigned char* serialize(unsigned char* buf) ;
-  unsigned int serialSize() ;
+  unsigned int serializedSize() const;
   int fromBuf(unsigned char* buf, unsigned len);
 
 private:
