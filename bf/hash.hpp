@@ -44,6 +44,18 @@ public:
   virtual int fromBuf(unsigned char*, unsigned int) = 0;
 };
 
+class ap_hasher : public base_hasher {
+public:
+  ap_hasher() = default;
+  ap_hasher(unsigned short idx_);
+  std::vector<digest> operator()(object const& o) const override;
+  unsigned char* serialize(unsigned char* buf) override;
+  unsigned int serializedSize() const override;
+  int fromBuf(unsigned char*, unsigned int len) override;
+private:
+  unsigned short less_than_idx;
+};
+
 /// A hasher which hashes an object *k* times.
 class default_hasher : public base_hasher
 {
@@ -81,6 +93,22 @@ private:
   std::shared_ptr<default_hash_function>  h2_;
 };
 
+class hasher_factory {
+public:
+  static std::shared_ptr<base_hasher> createHasher(unsigned char* type) {
+    switch (*type) {
+      case 0:
+        return std::make_shared<default_hasher>();
+      case 1:
+        return std::make_shared<double_hasher>();
+      case 2:
+        return std::make_shared<ap_hasher>();
+        break;
+      default:
+        return nullptr;
+    }
+  }
+};
 /// Creates a default or double hasher with the default hash function, using
 /// seeds from a linear congruential PRNG.
 ///

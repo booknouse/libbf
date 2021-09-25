@@ -122,19 +122,22 @@ int counting_bloom_filter::fromBuf(unsigned char* buf, unsigned int len) {
   auto buf_start = buf;
   unsigned int* hasher_sz = reinterpret_cast<unsigned int*>(buf);
   buf += sizeof(unsigned int);
-  hasher_ = std::make_shared<default_hasher>();
-  if (hasher_->fromBuf(buf, *hasher_sz) != 0)
+  hasher_ = hasher_factory::createHasher(buf);
+  if(!hasher_)
     return 1;
+  //hasher_ = std::make_shared<default_hasher>();
+  if (hasher_->fromBuf(buf, *hasher_sz) != 0)
+    return 2;
   buf += *hasher_sz;
   unsigned int* cells_sz = reinterpret_cast<unsigned int*>(buf);
   buf += sizeof(unsigned int);
   if (cells_.fromBuf(buf, *cells_sz) != 0)
-    return 2;
+    return 3;
   buf += *cells_sz;
   memmove(&partition_, buf, sizeof(partition_));
   buf += sizeof(partition_);
   if (buf - buf_start != len)
-    return 3;
+    return 4;
   return 0;
 }
 

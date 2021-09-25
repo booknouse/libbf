@@ -1,9 +1,10 @@
+#include <bf/ap_hasher.h>
 #include <bf/hash.hpp>
-#include <stdexcept>
-#include <memory>
-#include <string.h>
 #include <cassert>
 #include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <string.h>
 
 namespace bf {
 
@@ -18,15 +19,16 @@ size_t default_hash_function::operator()(object const& o) const {
   return o.size() == 0 ? 0 : h3_(o.data(), o.size());
 }
 
-unsigned char* default_hash_function::serialize(unsigned char* buf){
+unsigned char* default_hash_function::serialize(unsigned char* buf) {
   return h3_.serialize(buf);
 }
 
-int default_hash_function::fromBuf(unsigned char*buf, unsigned int len){
-  return h3_.fromBuf(buf,len);
+int default_hash_function::fromBuf(unsigned char* buf, unsigned int len) {
+  return h3_.fromBuf(buf, len);
 }
 
-default_hasher::default_hasher(std::vector<std::shared_ptr<default_hash_function>>& fns)
+default_hasher::default_hasher(
+  std::vector<std::shared_ptr<default_hash_function>>& fns)
     : fns_(std::move(fns)) {
 }
 
@@ -38,12 +40,9 @@ std::vector<digest> default_hasher::operator()(object const& o) const {
 }
 
 unsigned char* default_hasher::serialize(unsigned char* buf) {
-  unsigned char type = 0;
-  unsigned int sz = sizeof(type);
-  memmove(buf, &type, sz);
-  buf += sz;
+  *buf++ = 0;
   unsigned int ct = fns_.size();
-  sz = sizeof(ct);
+  unsigned int sz = sizeof(ct);
   memmove(buf, &ct, sz);
   buf += sz;
   for (auto& fn : fns_) {
@@ -85,7 +84,9 @@ int default_hasher::fromBuf(unsigned char* buf, unsigned int len) {
   return 0;
 }
 
-double_hasher::double_hasher(size_t k, std::shared_ptr<default_hash_function>& h1, std::shared_ptr<default_hash_function>& h2)
+double_hasher::double_hasher(size_t k,
+                             std::shared_ptr<default_hash_function>& h1,
+                             std::shared_ptr<default_hash_function>& h2)
     : k_(k), h1_(std::move(h1)), h2_(std::move(h2)) {
 }
 
@@ -99,11 +100,8 @@ std::vector<digest> double_hasher::operator()(object const& o) const {
 }
 
 unsigned char* double_hasher::serialize(unsigned char* buf) {
-  unsigned char type = 1;
-  unsigned int sz = sizeof(type);
-  memmove(buf, &type, sz);
-  buf += sz;
-  sz = sizeof(k_);
+  *buf++ =1;
+  unsigned int sz = sizeof(k_);
   memmove(buf, &k_, sz);
   buf += sz;
   auto h1_sz = h1_->serializedSize();
@@ -153,9 +151,43 @@ int double_hasher::fromBuf(unsigned char* buf, unsigned int len) {
   return 0;
 }
 
-std::shared_ptr<base_hasher> make_hasher(size_t k, size_t seed, bool double_hashing) {
+ap_hasher::ap_hasher(unsigned short idx_) : less_than_idx(idx_) {
+  if (less_than_idx > APHahser<unsigned long>::predef_salt_count)
+    throw std::runtime_error("hash function num too large");
+}
+
+std::vector<digest> ap_hasher::operator()(object const& o) const {
+  std::vector<digest> d(less_than_idx);
+  for (size_t i = 0; i < less_than_idx; ++i)
+    d[i] = APHahser<unsigned long>::apHash(
+      reinterpret_cast<const unsigned char*>(o.data()), o.size(), i);
+  return d;
+}
+
+unsigned char* ap_hasher::serialize(unsigned char* buf) {
+  *buf++ = 2;
+  //*reinterpret_cast<unsigned int*>(buf) = sizeof(less_than_idx);
+  //buf += sizeof(unsigned int);
+  memmove(buf, &less_than_idx, sizeof(less_than_idx));
+  return buf + sizeof(less_than_idx);
+}
+
+unsigned int ap_hasher::serializedSize() const {
+  return sizeof(unsigned char)+sizeof(less_than_idx);
+};
+
+int ap_hasher::fromBuf(unsigned char* buf, unsigned int len) {
+  if (*buf++ != 2)
+    return 1;
+  memmove(&less_than_idx, buf, sizeof(less_than_idx));
+  return 0;
+}
+
+std::shared_ptr<base_hasher> make_hasher(size_t k, size_t seed,
+                                         bool double_hashing) {
   assert(k > 0);
-  std::minstd_rand0 prng(seed);
+  return std::make_shared<ap_hasher>(k);
+  /*std::minstd_rand0 prng(seed);
   if (double_hashing) {
     auto h1 = std::make_shared<default_hash_function>(prng());
     auto h2 = std::make_shared<default_hash_function>(prng());
@@ -166,7 +198,7 @@ std::shared_ptr<base_hasher> make_hasher(size_t k, size_t seed, bool double_hash
       fns[i] = std::make_shared<default_hash_function>(prng());
     }
     return std::make_shared<default_hasher>(fns);
-  }
+  }*/
 }
 
 } // namespace bf
