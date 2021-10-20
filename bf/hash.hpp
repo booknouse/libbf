@@ -103,7 +103,6 @@ public:
         return std::make_shared<double_hasher>();
       case 2:
         return std::make_shared<ap_hasher>();
-        break;
       default:
         return nullptr;
     }
