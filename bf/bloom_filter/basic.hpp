@@ -65,7 +65,7 @@ public:
   /// @param hasher The hasher to use.
   /// @param bitvector the underlying bitvector of the bf.
   basic_bloom_filter(std::shared_ptr<base_hasher> h, bitvector b);
-
+  basic_bloom_filter(const basic_bloom_filter&);
   basic_bloom_filter(basic_bloom_filter&&);
 
   using bloom_filter::add;

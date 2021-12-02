@@ -35,9 +35,11 @@ basic_bloom_filter::basic_bloom_filter(std::shared_ptr<base_hasher> h, bitvector
 }
 
 basic_bloom_filter::basic_bloom_filter(basic_bloom_filter&& other)
-    : hasher_(std::move(other.hasher_)), bits_(std::move(other.bits_)) {
+    : hasher_(std::move(other.hasher_)), bits_(std::move(other.bits_)) ,partition_(other.partition_){
 }
 
+basic_bloom_filter::basic_bloom_filter(const basic_bloom_filter& other): hasher_(other.hasher_), bits_(other.bits_),  partition_(other.partition_){
+}
 void basic_bloom_filter::add(object const& o) {
   auto digests = (*hasher_)(o);
   if (partition_) {
