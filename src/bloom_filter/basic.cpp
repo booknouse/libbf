@@ -108,9 +108,9 @@ unsigned int basic_bloom_filter::serializedSize() const {
   return sizeof(unsigned int) * 2 + hasher_->serializedSize()
          + bits_.serializedSize() + sizeof(partition_);
 }
-int basic_bloom_filter::fromBuf(char* buf, unsigned int len) {
+int basic_bloom_filter::fromBuf(const char* buf, unsigned int len) {
   auto buf_start = buf;
-  unsigned int* hasher_sz = reinterpret_cast<unsigned int*>(buf);
+  auto hasher_sz = reinterpret_cast<const unsigned int*>(buf);
   buf += sizeof(unsigned int);
   hasher_ = hasher_factory::createHasher(buf);
   if(!hasher_)
@@ -118,7 +118,7 @@ int basic_bloom_filter::fromBuf(char* buf, unsigned int len) {
   if (hasher_->fromBuf(buf, *hasher_sz) != 0)
     return 2;
   buf += *hasher_sz;
-  unsigned int* cells_sz = reinterpret_cast<unsigned int*>(buf);
+  auto cells_sz = reinterpret_cast<const unsigned int*>(buf);
   buf += sizeof(unsigned int);
   if (bits_.fromBuf(buf, *cells_sz) != 0)
     return 3;

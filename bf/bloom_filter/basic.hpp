@@ -93,7 +93,7 @@ public:
   std::shared_ptr<base_hasher> const& hasher_function() const;
   char* serialize(char* buf) override;
   unsigned int serializedSize() const override;
-  int fromBuf(char*buf, unsigned int len) override;
+  int fromBuf(const char*buf, unsigned int len) override;
 
 private:
   std::shared_ptr<base_hasher> hasher_;

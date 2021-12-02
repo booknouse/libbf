@@ -118,9 +118,9 @@ unsigned int counting_bloom_filter::serializedSize() const {
          + cells_.serializedSize() + sizeof(partition_);
 }
 
-int counting_bloom_filter::fromBuf(char* buf, unsigned int len) {
+int counting_bloom_filter::fromBuf(const char* buf, unsigned int len) {
   auto buf_start = buf;
-  unsigned int* hasher_sz = reinterpret_cast<unsigned int*>(buf);
+  auto hasher_sz = reinterpret_cast<const unsigned int*>(buf);
   buf += sizeof(unsigned int);
   hasher_ = hasher_factory::createHasher(buf);
   if(!hasher_)
@@ -129,7 +129,7 @@ int counting_bloom_filter::fromBuf(char* buf, unsigned int len) {
   if (hasher_->fromBuf(buf, *hasher_sz) != 0)
     return 2;
   buf += *hasher_sz;
-  unsigned int* cells_sz = reinterpret_cast<unsigned int*>(buf);
+  auto cells_sz = reinterpret_cast<const unsigned int*>(buf);
   buf += sizeof(unsigned int);
   if (cells_.fromBuf(buf, *cells_sz) != 0)
     return 3;
@@ -228,14 +228,14 @@ unsigned int spectral_rm_bloom_filter::serializedSize() const {
   return sizeof(unsigned int) * 2 + first_.serializedSize()
          + second_.serializedSize();
 }
-int spectral_rm_bloom_filter::fromBuf(char* buf, unsigned int len) {
+int spectral_rm_bloom_filter::fromBuf(const char* buf, unsigned int len) {
   auto buf_start = buf;
-  unsigned int* first_sz = reinterpret_cast<unsigned int*>(buf);
+  auto first_sz = reinterpret_cast<const unsigned int*>(buf);
   buf += sizeof(unsigned int);
   if (0 != first_.fromBuf(buf, *first_sz))
     return 1;
   buf += *first_sz;
-  unsigned int* second_sz = reinterpret_cast<unsigned int*>(buf);
+  auto second_sz = reinterpret_cast<const unsigned int*>(buf);
   buf += sizeof(unsigned int);
   if (0 != second_.fromBuf(buf, *second_sz))
     return 2;

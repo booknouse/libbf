@@ -117,9 +117,9 @@ unsigned int counter_vector::serializedSize() const {
   return sizeof(unsigned int) + bits_.serializedSize() + sizeof(width_);
 }
 
-int counter_vector::fromBuf(char* buf, unsigned int len) {
+int counter_vector::fromBuf(const char* buf, unsigned int len) {
   auto buf_start = buf;
-  unsigned int* bits_sz = reinterpret_cast<unsigned int*>(buf);
+  auto bits_sz = reinterpret_cast<const unsigned int*>(buf);
   buf += sizeof(unsigned int);
   if (bits_.fromBuf(buf, *bits_sz) != 0)
     return 1;

@@ -48,7 +48,7 @@ public:
 
   virtual char* serialize(char* buf) = 0;
   virtual unsigned int serializedSize() const = 0;
-  virtual int fromBuf(char*buf, unsigned int len) = 0;
+  virtual int fromBuf(const char*buf, unsigned int len) = 0;
 };
 
 } // namespace bf

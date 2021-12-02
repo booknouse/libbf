@@ -72,8 +72,8 @@ public:
     return bytes_.size() * sizeof(T);
   }
 
-  int fromBuf(char* buf, unsigned int len) {
-    bytes_.assign(reinterpret_cast<T*>(buf), reinterpret_cast<T*>(buf + len));
+  int fromBuf(const char* buf, unsigned int len) {
+    bytes_.assign(reinterpret_cast<const T*>(buf), reinterpret_cast<const T*>(buf + len));
     return 0;
   }
 

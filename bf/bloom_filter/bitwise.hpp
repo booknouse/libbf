@@ -24,7 +24,7 @@ public:
 
   char* serialize(char* buf) override;
   unsigned int serializedSize() const override;
-  int fromBuf(char*buf, unsigned int len) override;
+  int fromBuf(const char*buf, unsigned int len) override;
 
 private:
   /// Appends a new level.

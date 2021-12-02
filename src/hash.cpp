@@ -23,7 +23,7 @@ char* default_hash_function::serialize(char* buf) {
   return h3_.serialize(buf);
 }
 
-int default_hash_function::fromBuf(char* buf, unsigned int len) {
+int default_hash_function::fromBuf(const char* buf, unsigned int len) {
   return h3_.fromBuf(buf, len);
 }
 
@@ -63,15 +63,15 @@ unsigned int default_hasher::serializedSize() const {
   return sz;
 }
 
-int default_hasher::fromBuf(char* buf, unsigned int len) {
+int default_hasher::fromBuf(const char* buf, unsigned int len) {
   auto buf_start = buf;
   if (*buf != 0)
     return 1;
   buf += sizeof(unsigned char);
-  unsigned int* ct = reinterpret_cast<unsigned int*>(buf);
+  auto ct = reinterpret_cast<const unsigned int*>(buf);
   buf += sizeof(unsigned int);
   for (unsigned int i = 0; i < *ct; i++) {
-    unsigned int* h3_sz = reinterpret_cast<unsigned int*>(buf);
+    auto h3_sz = reinterpret_cast<const unsigned int*>(buf);
     buf += sizeof(unsigned int);
     auto fn = std::make_shared<default_hash_function>();
     if (fn->fromBuf(buf, *h3_sz) != 0)
@@ -123,15 +123,15 @@ unsigned int double_hasher::serializedSize() const {
   return total_sz;
 }
 
-int double_hasher::fromBuf(char* buf, unsigned int len) {
+int double_hasher::fromBuf(const char* buf, unsigned int len) {
   auto buf_start = buf;
   if (*buf != 1)
     return 1;
   buf += sizeof(unsigned char);
-  k_ = *reinterpret_cast<size_t*>(buf);
+  k_ = *reinterpret_cast<const size_t*>(buf);
   buf += sizeof(size_t);
   {
-    unsigned int* h3_sz = reinterpret_cast<unsigned int*>(buf);
+    auto h3_sz = reinterpret_cast<const unsigned int*>(buf);
     buf += sizeof(unsigned int);
     h1_ = std::make_shared<default_hash_function>();
     if (h1_->fromBuf(buf, *h3_sz) != 0)
@@ -139,7 +139,7 @@ int double_hasher::fromBuf(char* buf, unsigned int len) {
     buf += *h3_sz;
   }
   {
-    unsigned int* h3_sz = reinterpret_cast<unsigned int*>(buf);
+    auto h3_sz = reinterpret_cast<const unsigned int*>(buf);
     buf += sizeof(unsigned int);
     h2_ = std::make_shared<default_hash_function>();
     if (h2_->fromBuf(buf, *h3_sz) != 0)
@@ -176,7 +176,7 @@ unsigned int ap_hasher::serializedSize() const {
   return sizeof(unsigned char)+sizeof(less_than_idx);
 };
 
-int ap_hasher::fromBuf(char* buf, unsigned int len) {
+int ap_hasher::fromBuf(const char* buf, unsigned int len) {
   if (*buf++ != 2)
     return 1;
   memmove(&less_than_idx, buf, sizeof(less_than_idx));

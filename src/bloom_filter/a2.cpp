@@ -47,7 +47,7 @@ char* a2_bloom_filter::serialize(char* buf){
 unsigned int a2_bloom_filter::serializedSize() const {
   return 0;
 }
-int a2_bloom_filter::fromBuf(char*buf, unsigned int len){
+int a2_bloom_filter::fromBuf(const char*buf, unsigned int len){
   return 0;
 }
 } // namespace bf

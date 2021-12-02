@@ -47,7 +47,7 @@ public:
 
   virtual char* serialize(char* buf) override;
   virtual unsigned int serializedSize() const override;
-  virtual int fromBuf(char*buf, unsigned int len) override;
+  virtual int fromBuf(const char*buf, unsigned int len) override;
 
 protected:
   /// Maps an object to the indices in the underlying counter vector.
@@ -131,7 +131,7 @@ public:
   void remove(object const& o);
   char* serialize(char* buf) override;
   unsigned int serializedSize() const override;
-  int fromBuf(char*buf, unsigned int len) override;
+  int fromBuf(const char*buf, unsigned int len) override;
 
 private:
   counting_bloom_filter first_;

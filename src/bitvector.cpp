@@ -435,12 +435,12 @@ unsigned int bitvector::serializedSize() const {
   return sizeof(unsigned int) + sz + sizeof(num_bits_);
 }
 
-int bitvector::fromBuf(char* buf, unsigned int len) {
-  auto* start_buf = buf;
-  unsigned int* sz = reinterpret_cast<unsigned int*>(buf);
+int bitvector::fromBuf(const char* buf, unsigned int len) {
+  auto start_buf = buf;
+  auto sz = reinterpret_cast<const unsigned int*>(buf);
   buf += sizeof(unsigned int);
-  bits_.assign(reinterpret_cast<block_type*>(buf),
-               reinterpret_cast<block_type*>(buf + (*sz)));
+  bits_.assign(reinterpret_cast<const block_type*>(buf),
+               reinterpret_cast<const block_type*>(buf + (*sz)));
   buf += *sz;
   memmove(&num_bits_, buf, sizeof(num_bits_));
   buf += sizeof(num_bits_);

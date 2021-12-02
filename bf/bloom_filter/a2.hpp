@@ -46,7 +46,7 @@ public:
   virtual void clear() override;
   char* serialize(char* buf) override;
   unsigned int serializedSize() const override;
-  int fromBuf(char*buf, unsigned int len) override;
+  int fromBuf(const char*buf, unsigned int len) override;
 
 private:
   basic_bloom_filter first_;

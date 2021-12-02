@@ -95,7 +95,7 @@ public:
 
   char* serialize(char* buf) ;
   unsigned int serializedSize() const;
-  int fromBuf(char* buf, unsigned len);
+  int fromBuf(const char* buf, unsigned len);
 
 private:
   bitvector bits_;
