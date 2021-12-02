@@ -25,11 +25,11 @@ public:
 
   size_t operator()(object const& o) const;
 
-  unsigned char* serialize(unsigned char* buf);
+  char* serialize(char* buf);
   unsigned int serializedSize() const {
     return h3_.serializedSize();
   }
-  int fromBuf(unsigned char*, unsigned int len);
+  int fromBuf(char*, unsigned int len);
 
 private:
   h3<size_t, max_obj_size> h3_;
@@ -39,9 +39,9 @@ class base_hasher{
 public:
   base_hasher()=default;
   virtual std::vector<digest> operator()(object const& o) const = 0;
-  virtual unsigned char* serialize(unsigned char* buf) = 0;
+  virtual char* serialize(char* buf) = 0;
   virtual unsigned int serializedSize() const = 0;
-  virtual int fromBuf(unsigned char*, unsigned int) = 0;
+  virtual int fromBuf(char*, unsigned int) = 0;
 };
 
 class ap_hasher : public base_hasher {
@@ -49,9 +49,9 @@ public:
   ap_hasher() = default;
   ap_hasher(unsigned short idx_);
   std::vector<digest> operator()(object const& o) const override;
-  unsigned char* serialize(unsigned char* buf) override;
+  char* serialize(char* buf) override;
   unsigned int serializedSize() const override;
-  int fromBuf(unsigned char*, unsigned int len) override;
+  int fromBuf(char*, unsigned int len) override;
 private:
   unsigned short less_than_idx;
 };
@@ -65,9 +65,9 @@ public:
 
   std::vector<digest> operator()(object const& o) const override;
 
-  unsigned char* serialize(unsigned char* buf) override;
+  char* serialize(char* buf) override;
   unsigned int serializedSize() const override;
-  int fromBuf(unsigned char*, unsigned int len) override;
+  int fromBuf(char*, unsigned int len) override;
 private:
   std::vector<std::shared_ptr<default_hash_function> > fns_;
 };
@@ -83,9 +83,9 @@ public:
 
   std::vector<digest> operator()(object const& o) const override;
 
-  unsigned char* serialize(unsigned char* buf) override;
+  char* serialize(char* buf) override;
   unsigned int serializedSize() const override;
-  int fromBuf(unsigned char*, unsigned int len) override;
+  int fromBuf(char*, unsigned int len) override;
 
 private:
   size_t k_;
@@ -95,7 +95,7 @@ private:
 
 class hasher_factory {
 public:
-  static std::shared_ptr<base_hasher> createHasher(unsigned char* type) {
+  static std::shared_ptr<base_hasher> createHasher(char* type) {
     switch (*type) {
       case 0:
         return std::make_shared<default_hasher>();

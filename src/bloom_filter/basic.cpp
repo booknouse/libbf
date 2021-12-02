@@ -92,7 +92,7 @@ std::shared_ptr<base_hasher> const& basic_bloom_filter::hasher_function() const 
   return hasher_;
 }
 
-unsigned char* basic_bloom_filter::serialize(unsigned char* buf) {
+char* basic_bloom_filter::serialize(char* buf) {
   auto hasher_sz = hasher_->serializedSize();
   memmove(buf, &hasher_sz, sizeof(hasher_sz));
   buf += sizeof(hasher_sz);
@@ -108,7 +108,7 @@ unsigned int basic_bloom_filter::serializedSize() const {
   return sizeof(unsigned int) * 2 + hasher_->serializedSize()
          + bits_.serializedSize() + sizeof(partition_);
 }
-int basic_bloom_filter::fromBuf(unsigned char* buf, unsigned int len) {
+int basic_bloom_filter::fromBuf(char* buf, unsigned int len) {
   auto buf_start = buf;
   unsigned int* hasher_sz = reinterpret_cast<unsigned int*>(buf);
   buf += sizeof(unsigned int);

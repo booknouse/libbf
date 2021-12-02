@@ -420,7 +420,7 @@ std::string to_string(bitvector const& b, bool msb_to_lsb, bool all,
   return str;
 }
 
-unsigned char* bitvector::serialize(unsigned char* buf) {
+char* bitvector::serialize(char* buf) {
   unsigned int sz = bits_.size() * sizeof(block_type);
   memmove(buf, &sz, sizeof(sz));
   buf += sizeof(sz);
@@ -435,7 +435,7 @@ unsigned int bitvector::serializedSize() const {
   return sizeof(unsigned int) + sz + sizeof(num_bits_);
 }
 
-int bitvector::fromBuf(unsigned char* buf, unsigned int len) {
+int bitvector::fromBuf(char* buf, unsigned int len) {
   auto* start_buf = buf;
   unsigned int* sz = reinterpret_cast<unsigned int*>(buf);
   buf += sizeof(unsigned int);

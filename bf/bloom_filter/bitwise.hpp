@@ -22,9 +22,9 @@ public:
   virtual size_t lookup(object const& o) const override;
   virtual void clear() override;
 
-  unsigned char* serialize(unsigned char* buf) override;
+  char* serialize(char* buf) override;
   unsigned int serializedSize() const override;
-  int fromBuf(unsigned char*buf, unsigned int len) override;
+  int fromBuf(char*buf, unsigned int len) override;
 
 private:
   /// Appends a new level.

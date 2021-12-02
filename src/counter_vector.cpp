@@ -103,7 +103,7 @@ size_t counter_vector::width() const {
   return width_;
 }
 
-unsigned char* counter_vector::serialize(unsigned char* buf) {
+char* counter_vector::serialize(char* buf) {
   auto bits_sz = bits_.serializedSize();
   memmove(buf, &bits_sz, sizeof(bits_sz));
   buf += sizeof(bits_sz);
@@ -117,7 +117,7 @@ unsigned int counter_vector::serializedSize() const {
   return sizeof(unsigned int) + bits_.serializedSize() + sizeof(width_);
 }
 
-int counter_vector::fromBuf(unsigned char* buf, unsigned int len) {
+int counter_vector::fromBuf(char* buf, unsigned int len) {
   auto buf_start = buf;
   unsigned int* bits_sz = reinterpret_cast<unsigned int*>(buf);
   buf += sizeof(unsigned int);

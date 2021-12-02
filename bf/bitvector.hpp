@@ -234,9 +234,9 @@ public:
   /// *i*  or `npos` if no such bit exists.
   size_type find_next(size_type i) const;
 
-  unsigned char* serialize(unsigned char* buf) ;
+  char* serialize(char* buf) ;
   unsigned int serializedSize() const;
-  int fromBuf(unsigned char* buf, unsigned int len);
+  int fromBuf(char* buf, unsigned int len);
 
 private:
   /// Computes the block index for a given bit position.

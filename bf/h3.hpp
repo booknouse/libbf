@@ -62,7 +62,7 @@ public:
     return result;
   }
 
-  unsigned char* serialize(unsigned char* buf) {
+  char* serialize(char* buf) {
     unsigned int sz = bytes_.size() * sizeof(T);
     memmove(buf, bytes_.data(), sz);
     return buf + sz;
@@ -72,7 +72,7 @@ public:
     return bytes_.size() * sizeof(T);
   }
 
-  int fromBuf(unsigned char* buf, unsigned int len) {
+  int fromBuf(char* buf, unsigned int len) {
     bytes_.assign(reinterpret_cast<T*>(buf), reinterpret_cast<T*>(buf + len));
     return 0;
   }

@@ -91,9 +91,9 @@ public:
 
   /// Returns the hasher of the Bloom filter.
   std::shared_ptr<base_hasher> const& hasher_function() const;
-  unsigned char* serialize(unsigned char* buf) override;
+  char* serialize(char* buf) override;
   unsigned int serializedSize() const override;
-  int fromBuf(unsigned char*buf, unsigned int len) override;
+  int fromBuf(char*buf, unsigned int len) override;
 
 private:
   std::shared_ptr<base_hasher> hasher_;

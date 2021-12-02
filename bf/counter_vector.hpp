@@ -93,9 +93,9 @@ public:
   /// @return The number of bits per cell.
   size_t width() const;
 
-  unsigned char* serialize(unsigned char* buf) ;
+  char* serialize(char* buf) ;
   unsigned int serializedSize() const;
-  int fromBuf(unsigned char* buf, unsigned len);
+  int fromBuf(char* buf, unsigned len);
 
 private:
   bitvector bits_;

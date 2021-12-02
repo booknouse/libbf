@@ -45,9 +45,9 @@ public:
     remove(wrap(x));
   }
 
-  virtual unsigned char* serialize(unsigned char* buf) override;
+  virtual char* serialize(char* buf) override;
   virtual unsigned int serializedSize() const override;
-  virtual int fromBuf(unsigned char*buf, unsigned int len) override;
+  virtual int fromBuf(char*buf, unsigned int len) override;
 
 protected:
   /// Maps an object to the indices in the underlying counter vector.
@@ -129,9 +129,9 @@ public:
   /// Removes an element.
   /// @param o The object whose cells to decrement by 1.
   void remove(object const& o);
-  unsigned char* serialize(unsigned char* buf) override;
+  char* serialize(char* buf) override;
   unsigned int serializedSize() const override;
-  int fromBuf(unsigned char*buf, unsigned int len) override;
+  int fromBuf(char*buf, unsigned int len) override;
 
 private:
   counting_bloom_filter first_;

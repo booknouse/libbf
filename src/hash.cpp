@@ -19,11 +19,11 @@ size_t default_hash_function::operator()(object const& o) const {
   return o.size() == 0 ? 0 : h3_(o.data(), o.size());
 }
 
-unsigned char* default_hash_function::serialize(unsigned char* buf) {
+char* default_hash_function::serialize(char* buf) {
   return h3_.serialize(buf);
 }
 
-int default_hash_function::fromBuf(unsigned char* buf, unsigned int len) {
+int default_hash_function::fromBuf(char* buf, unsigned int len) {
   return h3_.fromBuf(buf, len);
 }
 
@@ -39,7 +39,7 @@ std::vector<digest> default_hasher::operator()(object const& o) const {
   return d;
 }
 
-unsigned char* default_hasher::serialize(unsigned char* buf) {
+char* default_hasher::serialize(char* buf) {
   *buf++ = 0;
   unsigned int ct = fns_.size();
   unsigned int sz = sizeof(ct);
@@ -63,7 +63,7 @@ unsigned int default_hasher::serializedSize() const {
   return sz;
 }
 
-int default_hasher::fromBuf(unsigned char* buf, unsigned int len) {
+int default_hasher::fromBuf(char* buf, unsigned int len) {
   auto buf_start = buf;
   if (*buf != 0)
     return 1;
@@ -99,7 +99,7 @@ std::vector<digest> double_hasher::operator()(object const& o) const {
   return d;
 }
 
-unsigned char* double_hasher::serialize(unsigned char* buf) {
+char* double_hasher::serialize(char* buf) {
   *buf++ =1;
   unsigned int sz = sizeof(k_);
   memmove(buf, &k_, sz);
@@ -123,7 +123,7 @@ unsigned int double_hasher::serializedSize() const {
   return total_sz;
 }
 
-int double_hasher::fromBuf(unsigned char* buf, unsigned int len) {
+int double_hasher::fromBuf(char* buf, unsigned int len) {
   auto buf_start = buf;
   if (*buf != 1)
     return 1;
@@ -164,7 +164,7 @@ std::vector<digest> ap_hasher::operator()(object const& o) const {
   return d;
 }
 
-unsigned char* ap_hasher::serialize(unsigned char* buf) {
+char* ap_hasher::serialize(char* buf) {
   *buf++ = 2;
   //*reinterpret_cast<unsigned int*>(buf) = sizeof(less_than_idx);
   //buf += sizeof(unsigned int);
@@ -176,7 +176,7 @@ unsigned int ap_hasher::serializedSize() const {
   return sizeof(unsigned char)+sizeof(less_than_idx);
 };
 
-int ap_hasher::fromBuf(unsigned char* buf, unsigned int len) {
+int ap_hasher::fromBuf(char* buf, unsigned int len) {
   if (*buf++ != 2)
     return 1;
   memmove(&less_than_idx, buf, sizeof(less_than_idx));
