@@ -96,7 +96,7 @@ private:
 class hasher_factory {
 public:
   static std::shared_ptr<base_hasher> createHasher(const char* type) {
-    switch (*type) {
+    switch (be32toh(*reinterpret_cast<const unsigned int*>(type))) {
       case 0:
         return std::make_shared<default_hasher>();
       case 1:

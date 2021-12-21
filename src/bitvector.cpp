@@ -422,11 +422,11 @@ std::string to_string(bitvector const& b, bool msb_to_lsb, bool all,
 
 char* bitvector::serialize(char* buf) {
   unsigned int sz = bits_.size() * sizeof(block_type);
-  memmove(buf, &sz, sizeof(sz));
+  *reinterpret_cast<unsigned int*>(buf) = htobe32(sz);
   buf += sizeof(sz);
   memmove(buf, bits_.data(), sz);
   buf += sz;
-  memmove(buf, &num_bits_, sizeof(num_bits_));
+  *reinterpret_cast<size_type *>(buf) = htobe64(num_bits_);
   return buf + sizeof(num_bits_);
 }
 
@@ -437,12 +437,12 @@ unsigned int bitvector::serializedSize() const {
 
 int bitvector::fromBuf(const char* buf, unsigned int len) {
   auto start_buf = buf;
-  auto sz = reinterpret_cast<const unsigned int*>(buf);
+  auto sz = be32toh(*reinterpret_cast<const unsigned int*>(buf));
   buf += sizeof(unsigned int);
   bits_.assign(reinterpret_cast<const block_type*>(buf),
-               reinterpret_cast<const block_type*>(buf + (*sz)));
-  buf += *sz;
-  memmove(&num_bits_, buf, sizeof(num_bits_));
+               reinterpret_cast<const block_type*>(buf + sz));
+  buf += sz;
+  num_bits_ = be64toh(*reinterpret_cast<const size_type*>(buf));
   buf += sizeof(num_bits_);
   if (buf - start_buf != len)
     return 1;

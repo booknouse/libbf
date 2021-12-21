@@ -94,15 +94,15 @@ std::shared_ptr<base_hasher> const& basic_bloom_filter::hasher_function() const 
 
 char* basic_bloom_filter::serialize(char* buf) {
   auto hasher_sz = hasher_->serializedSize();
-  memmove(buf, &hasher_sz, sizeof(hasher_sz));
+  *reinterpret_cast<uint32_t*>(buf) = htobe32(hasher_sz);
   buf += sizeof(hasher_sz);
   buf = hasher_->serialize(buf);
   auto bits_sz = bits_.serializedSize();
-  memmove(buf, &bits_sz, sizeof(bits_sz));
+  *reinterpret_cast<uint32_t*>(buf) = htobe32(bits_sz);
   buf += sizeof(bits_sz);
   buf = bits_.serialize(buf);
-  memmove(buf, &partition_, sizeof(partition_));
-  return buf + sizeof(partition_);
+  *buf++ = partition_;
+  return buf;
 }
 unsigned int basic_bloom_filter::serializedSize() const {
   return sizeof(unsigned int) * 2 + hasher_->serializedSize()
@@ -110,21 +110,20 @@ unsigned int basic_bloom_filter::serializedSize() const {
 }
 int basic_bloom_filter::fromBuf(const char* buf, unsigned int len) {
   auto buf_start = buf;
-  auto hasher_sz = reinterpret_cast<const unsigned int*>(buf);
+  auto hasher_sz = be32toh(*reinterpret_cast<const unsigned int*>(buf));
   buf += sizeof(unsigned int);
   hasher_ = hasher_factory::createHasher(buf);
   if(!hasher_)
     return 1;
-  if (hasher_->fromBuf(buf, *hasher_sz) != 0)
+  if (hasher_->fromBuf(buf, hasher_sz) != 0)
     return 2;
-  buf += *hasher_sz;
-  auto cells_sz = reinterpret_cast<const unsigned int*>(buf);
+  buf += hasher_sz;
+  auto cells_sz = be32toh(*reinterpret_cast<const unsigned int*>(buf));
   buf += sizeof(unsigned int);
-  if (bits_.fromBuf(buf, *cells_sz) != 0)
+  if (bits_.fromBuf(buf, cells_sz) != 0)
     return 3;
-  buf += *cells_sz;
-  memmove(&partition_, buf, sizeof(partition_));
-  buf += sizeof(partition_);
+  buf += cells_sz;
+  partition_ = *buf++;
   if (buf - buf_start != len)
     return 4;
   return 0;

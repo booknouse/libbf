@@ -40,14 +40,15 @@ std::vector<digest> default_hasher::operator()(object const& o) const {
 }
 
 char* default_hasher::serialize(char* buf) {
-  *buf++ = 0;
+  *reinterpret_cast<uint32_t*>(buf) = htobe32(0);
+  buf += sizeof(uint32_t);
   unsigned int ct = fns_.size();
   unsigned int sz = sizeof(ct);
-  memmove(buf, &ct, sz);
+  *reinterpret_cast<uint32_t*>(buf) = htobe32(ct);
   buf += sz;
   for (auto& fn : fns_) {
     auto fn_sz = fn->serializedSize();
-    memmove(buf, &fn_sz, sizeof(fn_sz));
+    *reinterpret_cast<uint32_t*>(buf) = htobe32(fn_sz);
     buf += sizeof(fn_sz);
     buf = fn->serialize(buf);
   }
@@ -55,7 +56,7 @@ char* default_hasher::serialize(char* buf) {
 }
 
 unsigned int default_hasher::serializedSize() const {
-  unsigned int sz = sizeof(unsigned char) + sizeof(unsigned int);
+  unsigned int sz = sizeof(unsigned int) + sizeof(unsigned int);
   sz += fns_.size() * sizeof(unsigned int);
   for (auto& fn : fns_) {
     sz += fn->serializedSize();
@@ -65,19 +66,19 @@ unsigned int default_hasher::serializedSize() const {
 
 int default_hasher::fromBuf(const char* buf, unsigned int len) {
   auto buf_start = buf;
-  if (*buf != 0)
+  if (be32toh(*reinterpret_cast<const unsigned int*>(buf)) != 0)
     return 1;
-  buf += sizeof(unsigned char);
-  auto ct = reinterpret_cast<const unsigned int*>(buf);
   buf += sizeof(unsigned int);
-  for (unsigned int i = 0; i < *ct; i++) {
-    auto h3_sz = reinterpret_cast<const unsigned int*>(buf);
+  auto ct = be32toh(*reinterpret_cast<const unsigned int*>(buf));
+  buf += sizeof(unsigned int);
+  for (unsigned int i = 0; i < ct; i++) {
+    auto h3_sz = be32toh(*reinterpret_cast<const unsigned int*>(buf));
     buf += sizeof(unsigned int);
     auto fn = std::make_shared<default_hash_function>();
-    if (fn->fromBuf(buf, *h3_sz) != 0)
+    if (fn->fromBuf(buf, h3_sz) != 0)
       return 2;
     fns_.push_back(std::move(fn));
-    buf += *h3_sz;
+    buf += h3_sz;
   }
   if (buf - buf_start != len)
     return 3;
@@ -100,16 +101,17 @@ std::vector<digest> double_hasher::operator()(object const& o) const {
 }
 
 char* double_hasher::serialize(char* buf) {
-  *buf++ =1;
+  *reinterpret_cast<uint32_t *>(buf) = htobe32(1);
+  buf += sizeof(uint32_t);
   unsigned int sz = sizeof(k_);
-  memmove(buf, &k_, sz);
+  *reinterpret_cast<uint64_t*>(buf) = htobe64(k_);
   buf += sz;
   auto h1_sz = h1_->serializedSize();
-  memmove(buf, &h1_sz, sizeof(h1_sz));
+  *reinterpret_cast<uint32_t*>(buf) = htobe32(h1_sz);
   buf += sizeof(h1_sz);
   buf = h1_->serialize(buf);
   auto h2_sz = h2_->serializedSize();
-  memmove(buf, &h2_sz, sizeof(h2_sz));
+  *reinterpret_cast<uint32_t*>(buf) = htobe32(h2_sz);
   buf += sizeof(h2_sz);
   buf = h2_->serialize(buf);
   return buf;
@@ -117,7 +119,7 @@ char* double_hasher::serialize(char* buf) {
 
 unsigned int double_hasher::serializedSize() const {
   unsigned int total_sz =
-    sizeof(unsigned char) + sizeof(k_) + 2 * sizeof(unsigned int);
+    sizeof(unsigned int) + sizeof(k_) + 2 * sizeof(unsigned int);
   total_sz += h1_->serializedSize();
   total_sz += h2_->serializedSize();
   return total_sz;
@@ -125,26 +127,26 @@ unsigned int double_hasher::serializedSize() const {
 
 int double_hasher::fromBuf(const char* buf, unsigned int len) {
   auto buf_start = buf;
-  if (*buf != 1)
+  if (be32toh(*reinterpret_cast<const unsigned int*>(buf)) != 1)
     return 1;
-  buf += sizeof(unsigned char);
-  k_ = *reinterpret_cast<const size_t*>(buf);
+  buf += sizeof(unsigned int);
+  k_ = be64toh(*reinterpret_cast<const size_t*>(buf));
   buf += sizeof(size_t);
   {
-    auto h3_sz = reinterpret_cast<const unsigned int*>(buf);
+    auto h3_sz = be32toh(*reinterpret_cast<const unsigned int*>(buf));
     buf += sizeof(unsigned int);
     h1_ = std::make_shared<default_hash_function>();
-    if (h1_->fromBuf(buf, *h3_sz) != 0)
+    if (h1_->fromBuf(buf, h3_sz) != 0)
       return 2;
-    buf += *h3_sz;
+    buf += h3_sz;
   }
   {
-    auto h3_sz = reinterpret_cast<const unsigned int*>(buf);
+    auto h3_sz = be32toh(*reinterpret_cast<const unsigned int*>(buf));
     buf += sizeof(unsigned int);
     h2_ = std::make_shared<default_hash_function>();
-    if (h2_->fromBuf(buf, *h3_sz) != 0)
+    if (h2_->fromBuf(buf, h3_sz) != 0)
       return 3;
-    buf += *h3_sz;
+    buf += h3_sz;
   }
   if (buf - buf_start != len)
     return 4;
@@ -165,21 +167,23 @@ std::vector<digest> ap_hasher::operator()(object const& o) const {
 }
 
 char* ap_hasher::serialize(char* buf) {
-  *buf++ = 2;
+  *reinterpret_cast<uint32_t *>(buf) = htobe32(2);
+  buf += sizeof(uint32_t);
   //*reinterpret_cast<unsigned int*>(buf) = sizeof(less_than_idx);
   //buf += sizeof(unsigned int);
-  memmove(buf, &less_than_idx, sizeof(less_than_idx));
+  *reinterpret_cast<unsigned short*>(buf) = htobe16(less_than_idx);
   return buf + sizeof(less_than_idx);
 }
 
 unsigned int ap_hasher::serializedSize() const {
-  return sizeof(unsigned char)+sizeof(less_than_idx);
+  return sizeof(unsigned int)+sizeof(less_than_idx);
 };
 
 int ap_hasher::fromBuf(const char* buf, unsigned int len) {
-  if (*buf++ != 2)
+  if (be32toh(*reinterpret_cast<const unsigned int*>(buf)) != 2)
     return 1;
-  memmove(&less_than_idx, buf, sizeof(less_than_idx));
+  buf += sizeof(uint32_t);
+  less_than_idx = be16toh(*reinterpret_cast<const unsigned short*>(buf));
   return 0;
 }
 
